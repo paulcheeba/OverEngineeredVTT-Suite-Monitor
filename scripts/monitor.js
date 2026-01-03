@@ -292,7 +292,12 @@ async function fetchLatestVersion(repoUrl) {
       signal: controller.signal
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 404) {
+        console.log(`${MODULE_ID} | No releases found for ${owner}/${repo} (this is normal if no releases exist yet)`);
+      }
+      return null;
+    }
     const data = await res.json().catch(() => null);
     const tag = data?.tag_name;
     if (!tag) return null;
@@ -415,7 +420,7 @@ async function showOutOfDateDialog(allModules) {
   }
   
   const templatePath = "modules/oev-suite-monitor/templates/monitor.hbs";
-  const template = await getTemplate(templatePath);
+  const template = await foundry.applications.handlebars.getTemplate(templatePath);
   const moduleContent = template({ upToDate, outOfDate, notInstalled });
   
   // Build content with banner and scrollable module list
