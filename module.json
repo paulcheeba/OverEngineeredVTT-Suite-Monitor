@@ -1,0 +1,19 @@
+{
+  "id": "oev-suite-monitor",
+  "title": "OverEngineeredVTT Suite Monitor",
+  "description": "Suite-wide update tracker for OverEngineeredVTT (OEV) modules.",
+  "version": "13.0.1.0",
+  "authors": [
+    {
+      "name": "OverEngineeredVTT",
+      "name": "paulcheeba/crusherDestroyer666"
+    }
+  ],
+  "esmodules": [
+    "scripts/monitor.js"
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  }
+}
