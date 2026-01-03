@@ -65,6 +65,23 @@ Hooks.once("init", async () => {
     // Dev config not found - production mode
   }
 
+  // Register "Show Monitor" button in settings (GM-only)
+  game.settings.registerMenu(MODULE_ID, "showMonitor", {
+    name: "Show OEV Suite Monitor",
+    label: "Check for Updates Now",
+    hint: "Manually open the update monitor dialog",
+    icon: "fas fa-search",
+    type: class ShowMonitorButton extends FormApplication {
+      async _updateObject(event, formData) {}
+      
+      async render() {
+        const allModules = await getAllModulesWithStatus();
+        await showOutOfDateDialog(allModules);
+      }
+    },
+    restricted: true
+  });
+
   game.settings.register(MODULE_ID, SETTINGS.lastCheckAt, {
     name: "Last check at",
     scope: "world",
