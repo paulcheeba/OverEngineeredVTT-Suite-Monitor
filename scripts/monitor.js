@@ -11,25 +11,25 @@ const WATCHED_MODULES = [
   {
     id: "about-time-next",
     title: "About Time Next",
-    manifestUrl: "https://github.com/paulcheeba/about-time-next/releases/latest/download/module.json",
+    repoUrl: "https://github.com/paulcheeba/about-time-next",
     releaseUrl: "https://github.com/paulcheeba/about-time-next/releases/latest"
   },
   {
-    id: "chat-pruner",
+    id: "fvtt-chat-pruner",
     title: "Chat Pruner",
-    manifestUrl: "https://github.com/paulcheeba/chat-pruner/releases/latest/download/module.json",
+    repoUrl: "https://github.com/paulcheeba/chat-pruner",
     releaseUrl: "https://github.com/paulcheeba/chat-pruner/releases/latest"
   },
   {
     id: "find-and-replace",
     title: "Find and Replace",
-    manifestUrl: "https://github.com/paulcheeba/find-and-replace/releases/latest/download/module.json",
+    repoUrl: "https://github.com/paulcheeba/find-and-replace",
     releaseUrl: "https://github.com/paulcheeba/find-and-replace/releases/latest"
   },
   {
     id: "window-controls-next",
     title: "Window Controls Next",
-    manifestUrl: "https://github.com/paulcheeba/window-controls-next/releases/latest/download/module.json",
+    repoUrl: "https://github.com/paulcheeba/window-controls-next",
     releaseUrl: "https://github.com/paulcheeba/window-controls-next/releases/latest"
   }
 ];
@@ -39,7 +39,8 @@ const SETTINGS = {
   checkIntervalHours: "checkIntervalHours",
   hiddenUntilUpdate: "hiddenUntilUpdate",
   snoozedUntil: "snoozedUntil",
-  lastFingerprint: "lastFingerprint"
+  lastFingerprint: "lastFingerprint",
+  testingMode: "testingMode"
 };
 
 const DEFAULT_INTERVAL_HOURS = 12;
@@ -89,6 +90,15 @@ Hooks.once("init", () => {
     type: String,
     default: ""
   });
+
+  game.settings.register(MODULE_ID, SETTINGS.testingMode, {
+    name: "Testing Mode",
+    hint: "Force the update dialog to appear on every refresh, bypassing all checks. GM only.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
 });
 
 Hooks.once("ready", async () => {
@@ -97,6 +107,15 @@ Hooks.once("ready", async () => {
   _runInProgress = true;
 
   try {
+    const testingMode = Boolean(game.settings.get(MODULE_ID, SETTINGS.testingMode));
+    
+    // Testing mode: force dialog with all modules (installed and not)
+    if (testingMode) {
+      const allModules = await getAllModulesWithStatus();
+      await showOutOfDateDialog(allModules);
+      return;
+    }
+
     const now = Date.now();
     const snoozedUntil = Number(game.settings.get(MODULE_ID, SETTINGS.snoozedUntil) ?? 0);
     if (now < snoozedUntil) return;
@@ -134,7 +153,8 @@ Hooks.once("ready", async () => {
     const stillSnoozed = Date.now() < snoozedUntilAfter;
 
     if (outOfDate.length > 0 && !hidden && !stillSnoozed) {
-      await showOutOfDateDialog(outOfDate);
+      const allModules = await getAllModulesWithStatus();
+      await showOutOfDateDialog(allModules);
     }
   } catch (err) {
     console.error(`${MODULE_ID} | Update check failed`, err);
@@ -166,9 +186,54 @@ function getInstalledVersion(mod) {
   return typeof v === "string" ? v : String(v ?? "");
 }
 
+async function getAllModulesWithStatus() {
+  const allModules = [];
+  
+  for (const entry of WATCHED_MODULES) {
+    const mod = game.modules?.get(entry.id);
+    
+    if (!mod) {
+      // Not installed at all
+      allModules.push({
+        ...entry,
+        installedVersion: undefined,
+        latestVersion: undefined,
+        status: "not-installed"
+      });
+      continue;
+    }
+    
+    // Installed (enabled or disabled) - check version
+    const installedVersion = getInstalledVersion(mod);
+    const latestVersion = await fetchLatestVersion(entry.repoUrl);
+    
+    const installedNorm = normalizeVersion(installedVersion);
+    const latestNorm = normalizeVersion(latestVersion);
+    
+    let status = "unknown";
+    if (installedNorm && latestNorm) {
+      const cmp = compareSemver(installedNorm, latestNorm);
+      if (cmp === 0) status = "up-to-date";
+      else if (cmp === -1) status = "out-of-date";
+      else if (cmp === 1) status = "ahead";
+    } else if (installedNorm && latestNorm === installedNorm) {
+      status = "up-to-date";
+    }
+    
+    allModules.push({
+      ...entry,
+      installedVersion,
+      latestVersion,
+      status
+    });
+  }
+  
+  return allModules;
+}
+
 async function checkLatestVersions(watched) {
   const checks = watched.map(async entry => {
-    const latestVersion = await fetchLatestVersion(entry.manifestUrl);
+    const latestVersion = await fetchLatestVersion(entry.repoUrl);
 
     const installedNorm = normalizeVersion(entry.installedVersion);
     const latestNorm = normalizeVersion(latestVersion);
@@ -204,25 +269,33 @@ async function checkLatestVersions(watched) {
   });
 }
 
-async function fetchLatestVersion(manifestUrl) {
-  if (!manifestUrl) return null;
+async function fetchLatestVersion(repoUrl) {
+  if (!repoUrl) return null;
+
+  // Extract owner/repo from GitHub URL
+  const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (!match) return null;
+  
+  const [, owner, repo] = match;
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const res = await fetch(manifestUrl, {
+    const res = await fetch(apiUrl, {
       method: "GET",
-      headers: { "Accept": "application/json" },
+      headers: { "Accept": "application/vnd.github.v3+json" },
       signal: controller.signal
     });
 
     if (!res.ok) return null;
     const data = await res.json().catch(() => null);
-    const v = data?.version;
-    if (typeof v === "string") return v;
-    if (v == null) return null;
-    return String(v);
+    const tag = data?.tag_name;
+    if (!tag) return null;
+    
+    // Strip leading 'v' if present (e.g., v13.0.1.0 -> 13.0.1.0)
+    return typeof tag === "string" ? tag.replace(/^v/, "") : null;
   } catch (err) {
     console.warn(`${MODULE_ID} | Failed to fetch manifest ${manifestUrl}`, err);
     return null;
@@ -314,70 +387,72 @@ function makeFingerprint(results) {
     .join("|");
 }
 
-async function showOutOfDateDialog(outOfDate) {
-  const content = renderOutOfDateContent(outOfDate);
+async function showOutOfDateDialog(allModules) {
+  const upToDate = [];
+  const outOfDate = [];
+  const notInstalled = [];
+  
+  for (const r of allModules) {
+    const mod = game.modules?.get(r.id);
+    const status = mod?.active ? "enabled" : "disabled";
+    
+    const moduleData = {
+      ...r,
+      title: r.title || r.id,
+      status: r.status === "not-installed" ? undefined : status
+    };
+    
+    if (r.status === "not-installed") {
+      notInstalled.push(moduleData);
+    } else if (r.status === "out-of-date" || r.status === "ahead") {
+      outOfDate.push(moduleData);
+    } else {
+      upToDate.push(moduleData);
+    }
+  }
+  
+  const templatePath = "modules/oev-suite-monitor/templates/monitor.hbs";
+  const template = await getTemplate(templatePath);
+  const moduleContent = template({ upToDate, outOfDate, notInstalled });
+  
+  // Wrap content in scrollable container
+  const content = `
+    <div class="oev-scrollable-content" style="max-height: 420px; overflow-y: auto;">
+      ${moduleContent}
+    </div>
+  `;
 
   const dialog = new foundry.applications.api.DialogV2({
-    window: { title: "OEV Modules Out of Date" },
+    window: { 
+      title: "OverEngineeredVTT Suite Monitor"
+    },
+    position: {
+      width: 600
+    },
+    classes: ["oev-suite-monitor-dialog"],
     content,
     buttons: [
       {
         action: "hide",
-        label: "Hide until next update",
+        label: "Hide Until Update",
+        icon: "fas fa-eye-slash",
         callback: async () => {
           await game.settings.set(MODULE_ID, SETTINGS.hiddenUntilUpdate, true);
         }
       },
       {
         action: "snooze",
-        label: "Remind me later",
+        label: "Remind Me Later",
+        icon: "fas fa-clock",
+        default: true,
         callback: async () => {
           await game.settings.set(MODULE_ID, SETTINGS.snoozedUntil, Date.now() + SNOOZE_MS);
         }
-      },
-      {
-        action: "close",
-        label: "Close",
-        default: true
       }
     ]
   });
 
   await dialog.render({ force: true });
-}
-
-function renderOutOfDateContent(outOfDate) {
-  const rows = outOfDate
-    .map(r => {
-      const installed = escapeHtml(r.installedVersion || "(unknown)");
-      const latest = escapeHtml(r.latestVersion || "(unknown)");
-      const title = escapeHtml(r.title || r.id);
-
-      const manifestLink = r.manifestUrl
-        ? `<a href="${escapeAttr(r.manifestUrl)}" target="_blank" rel="noopener">Manifest</a>`
-        : "";
-      const releaseLink = r.releaseUrl
-        ? `<a href="${escapeAttr(r.releaseUrl)}" target="_blank" rel="noopener">Release</a>`
-        : "";
-
-      const links = [manifestLink, releaseLink].filter(Boolean).join(" | ");
-
-      return `
-<li>
-  <div><strong>${title}</strong> <small>(${escapeHtml(r.id)})</small></div>
-  <div>Installed: <code>${installed}</code> → Latest: <code>${latest}</code></div>
-  <div>${links}</div>
-</li>`;
-    })
-    .join("\n");
-
-  return `
-<div>
-  <p>The following OEV modules have updates available:</p>
-  <ul>
-    ${rows}
-  </ul>
-</div>`;
 }
 
 function escapeHtml(s) {

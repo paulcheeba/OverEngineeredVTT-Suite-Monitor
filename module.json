@@ -12,6 +12,9 @@
   "esmodules": [
     "scripts/monitor.js"
   ],
+  "styles": [
+    "styles/monitor.css"
+  ],
   "compatibility": {
     "minimum": "13",
     "verified": "13"

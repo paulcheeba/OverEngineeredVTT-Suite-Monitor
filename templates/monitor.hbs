@@ -1,0 +1,66 @@
+{{#if outOfDate}}
+<section class="oev-module-section oev-section-outdated">
+  <header class="oev-section-header">
+    <h4>Out of Date Modules</h4>
+  </header>
+  <div class="oev-module-cards">
+    {{#each outOfDate}}
+    <div class="oev-module-card">
+      <h4>{{title}}</h4>
+      <div class="oev-module-id">ID: {{id}}</div>
+      <div class="oev-module-status">Status: <span class="status-{{status}}">{{status}}</span></div>
+      <span class="oev-module-versions">Installed: <code>v{{installedVersion}}</code> → Latest: <code>v{{latestVersion}}</code></span>
+      <div class="oev-module-links">
+        {{#if releaseUrl}}<a href="{{releaseUrl}}" target="_blank" rel="noopener">Latest Release</a>{{/if}}
+        {{#if repoUrl}}{{#if releaseUrl}} | {{/if}}<a href="{{repoUrl}}" target="_blank" rel="noopener">Repository</a>{{/if}}
+      </div>
+      <hr>
+    </div>
+    {{/each}}
+  </div>
+</section>
+{{/if}}
+
+{{#if upToDate}}
+<section class="oev-module-section oev-section-updated">
+  <header class="oev-section-header">
+    <h4>Up to Date Modules</h4>
+    <hr>
+  </header>
+  <div class="oev-module-cards">
+    {{#each upToDate}}
+    <div class="oev-module-card">
+      <h4>{{title}}</h4>
+      <div class="oev-module-id">ID: {{id}}</div>
+      <div class="oev-module-status">Status: <span class="status-{{status}}">{{status}}</span></div>
+      <span class="oev-module-versions">Installed: <code>v{{installedVersion}}</code> → Latest: <code>v{{latestVersion}}</code></span>
+      <div class="oev-module-links">
+        {{#if releaseUrl}}<a href="{{releaseUrl}}" target="_blank" rel="noopener">Latest Release</a>{{/if}}
+        {{#if repoUrl}}{{#if releaseUrl}} | {{/if}}<a href="{{repoUrl}}" target="_blank" rel="noopener">Repository</a>{{/if}}
+      </div>
+      <hr>
+    </div>
+    {{/each}}
+  </div>
+</section>
+{{/if}}
+
+{{#if notInstalled}}
+<section class="oev-module-section oev-section-available">
+  <header class="oev-section-header">
+    <h4>Available Modules</h4>
+  </header>
+  <div class="oev-module-cards">
+    {{#each notInstalled}}
+    <div class="oev-module-card">
+      <h4>{{title}}</h4>
+      <div class="oev-module-id">ID: {{id}}</div>
+      <div class="oev-module-links">
+        {{#if repoUrl}}<a href="{{repoUrl}}" target="_blank" rel="noopener">Repository</a>{{/if}}
+      </div>
+      <hr>
+    </div>
+    {{/each}}
+  </div>
+</section>
+{{/if}}
