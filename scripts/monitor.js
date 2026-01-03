@@ -27,6 +27,12 @@ const WATCHED_MODULES = [
     releaseUrl: "https://github.com/paulcheeba/find-and-replace/releases/latest"
   },
   {
+    id: "oev-suite-monitor",
+    title: "OEV Suite Monitor",
+    repoUrl: "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor",
+    releaseUrl: "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor/releases/latest"
+  },
+  {
     id: "window-controls-next",
     title: "Window Controls Next",
     repoUrl: "https://github.com/paulcheeba/window-controls-next",
