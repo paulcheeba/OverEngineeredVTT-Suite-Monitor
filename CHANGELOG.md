@@ -1,0 +1,29 @@
+# Changelog
+
+All notable changes to the OverEngineeredVTT Suite Monitor will be documented in this file.
+
+## [13.0.1.0] - 2026-01-03
+
+### Added
+- **First iteration complete** - Full-featured suite monitoring module for tracking OverEngineeredVTT modules
+- DialogV2-based update notification dialog with modern, responsive design
+- Automatic update checking via GitHub API (release tags)
+- GM-only behavior - only GMs see notifications and dialogs
+- Testing Mode setting for UI development and testing
+- Three-section layout: Out of Date, Up to Date, and Available modules
+- Color-coded module status (enabled/disabled) with visual indicators
+- Condensed card layout with inline version display
+- Banner section with Patreon and Discord buttons featuring hover glow effects
+- Colored borders for each section (red for outdated, green for updated, gray for available)
+- Scrollable content area with fixed 430px height
+- "Hide Until Update" and "Remind Me Later" (2-hour snooze) functionality
+- Fingerprint-based change detection to reset hidden state on new updates
+- Configurable check interval (default 12 hours) with jitter
+- Supports all 4 OEV modules: About Time Next, Chat Pruner, Find and Replace, Window Controls Next
+
+### Technical
+- Separated concerns: Handlebars templates, CSS styling, and JavaScript logic
+- Semantic HTML structure with proper section/header elements
+- Foundry VTT v13+ compatible (ApplicationV2/DialogV2 APIs only)
+- Version comparison with semver support including prerelease tags
+- Proper error handling and network timeout protection (10s)
