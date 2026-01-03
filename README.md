@@ -21,4 +21,4 @@ This module tracks the following OverEngineeredVTT modules:
 - [OEV Suite Monitor](https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor) (self-monitoring)
 - [Window Controls Next](https://github.com/paulcheeba/window-controls-next)
 
-The module checks for updates to installed modules (both enabled and disabled in Testing Mode, or only enabled modules in normal operation).
+The module checks for updates to all installed OEV modules (enabled or disabled) and shows available modules that aren't installed yet.

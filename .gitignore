@@ -1,3 +1,6 @@
 # Development and instruction files (local only)
 .github/devFolder/
 .github/instructions/
+
+# Local development configuration
+config/

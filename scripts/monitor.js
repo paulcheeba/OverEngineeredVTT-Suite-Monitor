@@ -56,7 +56,15 @@ const JITTER_SECONDS_MAX = 10;
 
 let _runInProgress = false;
 
-Hooks.once("init", () => {
+Hooks.once("init", async () => {
+  // Try to load dev config and register dev-only settings
+  try {
+    const devConfig = await import("../config/dev-config.js");
+    devConfig.registerDevSettings?.();
+  } catch (e) {
+    // Dev config not found - production mode
+  }
+
   game.settings.register(MODULE_ID, SETTINGS.lastCheckAt, {
     name: "Last check at",
     scope: "world",
@@ -96,15 +104,6 @@ Hooks.once("init", () => {
     type: String,
     default: ""
   });
-
-  game.settings.register(MODULE_ID, SETTINGS.testingMode, {
-    name: "Testing Mode",
-    hint: "Force the update dialog to appear on every refresh, bypassing all checks. GM only.",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: false
-  });
 });
 
 Hooks.once("ready", async () => {
@@ -113,9 +112,9 @@ Hooks.once("ready", async () => {
   _runInProgress = true;
 
   try {
-    const testingMode = Boolean(game.settings.get(MODULE_ID, SETTINGS.testingMode));
-    
     // Testing mode: force dialog with all modules (installed and not)
+    const testingMode = game.settings.get(MODULE_ID, SETTINGS.testingMode);
+    console.log(`${MODULE_ID} | Testing Mode: ${testingMode ? "Enabled" : "Disabled"}`);
     if (testingMode) {
       const allModules = await getAllModulesWithStatus();
       await showOutOfDateDialog(allModules);
@@ -137,7 +136,7 @@ Hooks.once("ready", async () => {
 
     await game.settings.set(MODULE_ID, SETTINGS.lastCheckAt, Date.now());
 
-    const watched = getWatchedInstalledActiveModules();
+    const watched = getWatchedInstalledModules();
     const results = await checkLatestVersions(watched);
 
     // Fingerprint logic
@@ -169,16 +168,14 @@ Hooks.once("ready", async () => {
   }
 });
 
-function getWatchedInstalledActiveModules() {
+function getWatchedInstalledModules() {
   const watched = [];
   for (const entry of WATCHED_MODULES) {
     if (!entry?.id) continue;
     const mod = game.modules?.get(entry.id);
     if (!mod) continue;
 
-    // Prefer only active modules.
-    if (!mod.active) continue;
-
+    // Check all installed modules (enabled or disabled)
     watched.push({
       ...entry,
       installedVersion: getInstalledVersion(mod)
