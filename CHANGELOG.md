@@ -1,6 +1,9 @@
 # Changelog
 
-All notable changes to the OverEngineeredVTT Suite Monitor will be documented in this file.
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to Semantic Versioning adapted for Foundry VTT modules: v{foundry version}.{major version}.{subversion}.{test subversion}.
 
 ## [13.0.1.0] - 2026-01-03
 
@@ -20,10 +23,9 @@ All notable changes to the OverEngineeredVTT Suite Monitor will be documented in
 - Fingerprint-based change detection to reset hidden state on new updates
 - Configurable check interval (default 12 hours) with jitter
 - Supports all 4 OEV modules: About Time Next, Chat Pruner, Find and Replace, Window Controls Next
-
-### Technical
 - Separated concerns: Handlebars templates, CSS styling, and JavaScript logic
 - Semantic HTML structure with proper section/header elements
 - Foundry VTT v13+ compatible (ApplicationV2/DialogV2 APIs only)
 - Version comparison with semver support including prerelease tags
 - Proper error handling and network timeout protection (10s)
+
