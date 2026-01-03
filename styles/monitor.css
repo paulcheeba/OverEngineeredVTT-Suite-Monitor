@@ -6,10 +6,26 @@
 /* Module sections */
 .oev-module-section {
   margin-bottom: 1.5rem;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .oev-module-section:last-child {
   margin-bottom: 0;
+}
+
+/* Section type borders */
+.oev-section-outdated {
+  border-color: rgba(220, 53, 69, 0.4);
+}
+
+.oev-section-updated {
+  border-color: rgba(40, 167, 69, 0.4);
+}
+
+.oev-section-available {
+  border-color: rgba(200, 200, 200, 0.5);
 }
 
 /* Section headers */
@@ -102,4 +118,43 @@
 
 .oev-module-card:last-child hr {
   display: none;
+}
+
+/* Banner section */
+.oev-banner {
+  width: 100%;
+  height: 100px;
+  background-image: url('../images/OEVSM-banner.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 566px 100px;
+  position: relative;
+}
+
+.oev-banner-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 53px;
+  height: 53px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.oev-banner-btn:hover {
+  filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.8));
+}
+
+.oev-banner-patreon {
+  left: 15px;
+}
+
+.oev-banner-discord {
+  right: 15px;
+}
+
+.oev-banner-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }

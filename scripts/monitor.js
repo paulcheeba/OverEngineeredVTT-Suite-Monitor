@@ -415,9 +415,19 @@ async function showOutOfDateDialog(allModules) {
   const template = await getTemplate(templatePath);
   const moduleContent = template({ upToDate, outOfDate, notInstalled });
   
-  // Wrap content in scrollable container
+  // Build content with banner and scrollable module list
   const content = `
-    <div class="oev-scrollable-content" style="max-height: 420px; overflow-y: auto;">
+    <div class="oev-banner">
+      <a href="https://www.patreon.com/c/u45257624" class="oev-banner-btn oev-banner-patreon" 
+         target="_blank" rel="noopener" title="Support me on Patreon">
+        <img src="modules/oev-suite-monitor/images/patreonbutton.png" alt="Patreon">
+      </a>
+      <a href="https://discord.gg/2FwEX9Nncv" class="oev-banner-btn oev-banner-discord" 
+         target="_blank" rel="noopener" title="Join the OEV Discord">
+        <img src="modules/oev-suite-monitor/images/discordbutton.png" alt="Discord">
+      </a>
+    </div>
+    <div class="oev-scrollable-content" style="max-height: 430px; overflow-y: auto;">
       ${moduleContent}
     </div>
   `;
