@@ -46,6 +46,7 @@ const SETTINGS = {
   hiddenUntilUpdate: "hiddenUntilUpdate",
   snoozedUntil: "snoozedUntil",
   lastFingerprint: "lastFingerprint",
+  lastCheckResults: "lastCheckResults",
   testingMode: "testingMode"
 };
 
@@ -57,13 +58,13 @@ const JITTER_SECONDS_MAX = 10;
 let _runInProgress = false;
 
 Hooks.once("init", async () => {
-  // Try to load dev config and register dev-only settings
-  try {
-    const devConfig = await import("../config/dev-config.js");
-    devConfig.registerDevSettings?.();
-  } catch (e) {
-    // Dev config not found - production mode
-  }
+  /* // Dev-only: Uncomment to load dev config and register dev-only settings
+   try {
+   const devConfig = await import("../config/dev-config.js");
+   devConfig.registerDevSettings?.();
+   } catch (e) {
+   // Dev config not found - production mode
+ }*/
 
   // Register "Show Monitor" button in settings (GM-only)
   game.settings.registerMenu(MODULE_ID, "showMonitor", {
@@ -71,10 +72,8 @@ Hooks.once("init", async () => {
     label: "Check for Updates Now",
     hint: "Manually open the update monitor dialog",
     icon: "fas fa-search",
-    type: class ShowMonitorButton extends FormApplication {
-      async _updateObject(event, formData) {}
-      
-      async render() {
+    type: class ShowMonitorButton extends foundry.applications.api.ApplicationV2 {
+      async render(options) {
         const allModules = await getAllModulesWithStatus();
         await showOutOfDateDialog(allModules);
       }
@@ -90,18 +89,11 @@ Hooks.once("init", async () => {
     default: 0
   });
 
-  game.settings.register(MODULE_ID, SETTINGS.checkIntervalHours, {
-    name: "Update check interval (hours)",
+  game.settings.register(MODULE_ID, SETTINGS.hiddenUntilUpdate, {
+    name: "Dialog hidden until next OEV update",
+    hint: "If checked, the update dialog will not appear until a new version is released. Uncheck to show the dialog again on next reload.",
     scope: "world",
     config: true,
-    type: Number,
-    default: DEFAULT_INTERVAL_HOURS
-  });
-
-  game.settings.register(MODULE_ID, SETTINGS.hiddenUntilUpdate, {
-    name: "Hide until next update",
-    scope: "world",
-    config: false,
     type: Boolean,
     default: false
   });
@@ -121,6 +113,14 @@ Hooks.once("init", async () => {
     type: String,
     default: ""
   });
+
+  game.settings.register(MODULE_ID, SETTINGS.lastCheckResults, {
+    name: "Last check results",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {}
+  });
 });
 
 Hooks.once("ready", async () => {
@@ -130,7 +130,10 @@ Hooks.once("ready", async () => {
 
   try {
     // Testing mode: force dialog with all modules (installed and not)
-    const testingMode = game.settings.get(MODULE_ID, SETTINGS.testingMode);
+    let testingMode = false;
+    if (game.settings.settings.has(`${MODULE_ID}.${SETTINGS.testingMode}`)) {
+      testingMode = game.settings.get(MODULE_ID, SETTINGS.testingMode);
+    }
     console.log(`${MODULE_ID} | Testing Mode: ${testingMode ? "Enabled" : "Disabled"}`);
     if (testingMode) {
       const allModules = await getAllModulesWithStatus();
@@ -139,42 +142,63 @@ Hooks.once("ready", async () => {
     }
 
     const now = Date.now();
-    const snoozedUntil = Number(game.settings.get(MODULE_ID, SETTINGS.snoozedUntil) ?? 0);
-    if (now < snoozedUntil) return;
 
+    // Check hidden status
+    const hidden = Boolean(game.settings.get(MODULE_ID, SETTINGS.hiddenUntilUpdate));
+
+    // Determine if we need to fetch fresh data from GitHub
     const lastCheckAt = Number(game.settings.get(MODULE_ID, SETTINGS.lastCheckAt) ?? 0);
-    const intervalHours = Number(game.settings.get(MODULE_ID, SETTINGS.checkIntervalHours) ?? DEFAULT_INTERVAL_HOURS);
+    const intervalHours = game.settings.settings.has(`${MODULE_ID}.${SETTINGS.checkIntervalHours}`)
+      ? Number(game.settings.get(MODULE_ID, SETTINGS.checkIntervalHours))
+      : DEFAULT_INTERVAL_HOURS;
     const intervalMs = Math.max(0, intervalHours) * 60 * 60 * 1000;
+    const shouldFetch = (now - lastCheckAt) >= intervalMs;
 
-    if (now - lastCheckAt < intervalMs) return;
+    // Calculate time until next fetch for logging
+    const timeSinceLastCheck = now - lastCheckAt;
+    const timeUntilNextFetch = Math.max(0, intervalMs - timeSinceLastCheck);
+    const hoursRemaining = (timeUntilNextFetch / (60 * 60 * 1000)).toFixed(2);
 
-    const jitterMs = Math.floor(Math.random() * (JITTER_SECONDS_MAX + 1)) * 1000;
-    if (jitterMs) await new Promise(resolve => setTimeout(resolve, jitterMs));
+    console.log(`${MODULE_ID} | Dialog hidden: ${hidden}`);
+    console.log(`${MODULE_ID} | Next fetch in: ${hoursRemaining} hours (interval: ${intervalHours}h)`);
 
-    await game.settings.set(MODULE_ID, SETTINGS.lastCheckAt, Date.now());
+    let results;
+    
+    if (shouldFetch) {
+      // Fetch fresh data from GitHub
+      const jitterMs = Math.floor(Math.random() * (JITTER_SECONDS_MAX + 1)) * 1000;
+      if (jitterMs) await new Promise(resolve => setTimeout(resolve, jitterMs));
 
-    const watched = getWatchedInstalledModules();
-    const results = await checkLatestVersions(watched);
+      const watched = getWatchedInstalledModules();
+      results = await checkLatestVersions(watched);
 
-    // Fingerprint logic
-    const fingerprint = makeFingerprint(results);
-    const lastFingerprint = String(game.settings.get(MODULE_ID, SETTINGS.lastFingerprint) ?? "");
-    if (fingerprint !== lastFingerprint) {
-      await game.settings.set(MODULE_ID, SETTINGS.hiddenUntilUpdate, false);
-      await game.settings.set(MODULE_ID, SETTINGS.lastFingerprint, fingerprint);
+      // Update timestamp and cache results
+      await game.settings.set(MODULE_ID, SETTINGS.lastCheckAt, Date.now());
+      await game.settings.set(MODULE_ID, SETTINGS.lastCheckResults, { modules: results });
+
+      // Fingerprint logic - check if versions changed
+      const fingerprint = makeFingerprint(results);
+      const lastFingerprint = String(game.settings.get(MODULE_ID, SETTINGS.lastFingerprint) ?? "");
+      if (fingerprint !== lastFingerprint) {
+        await game.settings.set(MODULE_ID, SETTINGS.hiddenUntilUpdate, false);
+        await game.settings.set(MODULE_ID, SETTINGS.lastFingerprint, fingerprint);
+      }
+    } else {
+      // Use cached results
+      const cached = game.settings.get(MODULE_ID, SETTINGS.lastCheckResults);
+      results = cached?.modules || [];
     }
 
     const outOfDate = results.filter(r => r.status === "out-of-date");
 
-    // Required GM-only notification strings
-    if (outOfDate.length > 0) ui.notifications.warn(`You have ${outOfDate.length} OEV modules out of date.`);
-    else ui.notifications.info("All OEV modules up to date.");
+    // Always show GM notification when we fetch
+    if (shouldFetch) {
+      if (outOfDate.length > 0) ui.notifications.warn(`You have ${outOfDate.length} OEV modules out of date.`);
+      else ui.notifications.info("All OEV modules up to date.");
+    }
 
-    const hidden = Boolean(game.settings.get(MODULE_ID, SETTINGS.hiddenUntilUpdate));
-    const snoozedUntilAfter = Number(game.settings.get(MODULE_ID, SETTINGS.snoozedUntil) ?? 0);
-    const stillSnoozed = Date.now() < snoozedUntilAfter;
-
-    if (outOfDate.length > 0 && !hidden && !stillSnoozed) {
+    // Show dialog if there are out-of-date modules and not hidden
+    if (outOfDate.length > 0 && !hidden) {
       const allModules = await getAllModulesWithStatus();
       await showOutOfDateDialog(allModules);
     }
@@ -345,14 +369,14 @@ function parseSemver(v) {
   const [core, pre] = coreAndPre.split("-");
 
   const parts = core.split(".").map(p => p.trim());
-  if (parts.length < 1 || parts.length > 3) return null;
+  if (parts.length < 1 || parts.length > 5) return null;
   const nums = parts.map(p => (p === "" ? NaN : Number(p)));
   if (nums.some(n => !Number.isInteger(n) || n < 0)) return null;
 
-  const [major, minor = 0, patch = 0] = nums;
+  const [major, minor = 0, patch = 0, build = 0, hotfix = 0] = nums;
   const prerelease = pre ? pre.split(".").map(p => p.trim()).filter(Boolean) : [];
 
-  return { major, minor, patch, prerelease };
+  return { major, minor, patch, build, hotfix, prerelease };
 }
 
 /**
@@ -364,7 +388,7 @@ function compareSemver(a, b) {
   const pb = parseSemver(b);
   if (!pa || !pb) return null;
 
-  for (const key of ["major", "minor", "patch"]) {
+  for (const key of ["major", "minor", "patch", "build", "hotfix"]) {
     if (pa[key] < pb[key]) return -1;
     if (pa[key] > pb[key]) return 1;
   }
@@ -479,10 +503,8 @@ async function showOutOfDateDialog(allModules) {
         action: "snooze",
         label: "Remind Me Later",
         icon: "fas fa-clock",
-        default: true,
-        callback: async () => {
-          await game.settings.set(MODULE_ID, SETTINGS.snoozedUntil, Date.now() + SNOOZE_MS);
-        }
+        default: true
+        // No callback - just closes the dialog, user will be reminded on next load
       }
     ]
   });

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to Semantic Versioning adapted for Foundry VTT modules: v{foundry version}.{major version}.{subversion}.{test subversion}.
 
+## [13.1.0.0] - 2026-01-04
+
+### Fixed
+- **Version comparison now supports 5-part semantic versioning** (major.minor.patch.build.hotfix)
+- Out-of-date modules now correctly categorize into "Out of Date" section instead of "Up to Date"
+- Suppressed testingMode setting errors in production environments
+- Removed ApplicationV1 deprecation warning by migrating to ApplicationV2
+- Commented out dev-config import to prevent 404 errors in production
+
+### Changed
+- **Dialog now shows on every world load if modules are out-of-date** (unless hidden or snoozed)
+- GitHub API fetch interval cached - only fetches fresh data every 12 hours
+- Module status results cached between loads for immediate dialog display
+- "Remind Me Later" button simplified - now just closes dialog, will reappear on next load
+- Removed snooze timer functionality (no longer needed with new load behavior)
+- Update check interval setting moved to dev-config only (prevents accidental GitHub API spam)
+- Hidden state now exposed as user-facing setting "Dialog hidden until next OEV update" with checkbox in Module Settings
+- testingMode setting check now gracefully handles missing setting registration
+
+### Added
+- Console logs showing dialog hidden state and time until next GitHub fetch
+- New `lastCheckResults` setting to cache module status data between world loads
+
 ## [13.0.1.0] - 2026-01-03
 
 ### Added

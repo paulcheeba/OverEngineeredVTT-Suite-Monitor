@@ -2,7 +2,7 @@
   "id": "oev-suite-monitor",
   "title": "OverEngineeredVTT Suite Monitor",
   "description": "Suite-wide update tracker for OverEngineeredVTT (OEV) modules.",
-  "version": "13.0.1.0",
+  "version": "13.1.0.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13",
