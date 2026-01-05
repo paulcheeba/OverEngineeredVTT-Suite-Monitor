@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to Semantic Versioning adapted for Foundry VTT modules: v{foundry version}.{major version}.{subversion}.{test subversion}.
 
+## [13.1.0.0] - 2026-01-04
+
+### Fixed
+- **Version comparison now supports 5-part semantic versioning** (major.minor.patch.build.hotfix)
+- Out-of-date modules now correctly categorize into "Out of Date" section instead of "Up to Date"
+- Suppressed testingMode setting errors in production environments
+- Removed ApplicationV1 deprecation warning by migrating to ApplicationV2
+- Commented out dev-config import to prevent 404 errors in production
+
+### Changed
+- testingMode setting check now gracefully handles missing setting registration
+
 ## [13.0.1.0] - 2026-01-03
 
 ### Added
