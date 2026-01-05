@@ -2,7 +2,7 @@
   "id": "oev-suite-monitor",
   "title": "OverEngineeredVTT Suite Monitor",
   "description": "Suite-wide update tracker for OverEngineeredVTT (OEV) modules.",
-  "version": "13.1.0.0",
+  "version": "13.0.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13",
@@ -24,7 +24,6 @@
   ],
   "bugs": "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor/issues",
   "url": "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor",
-  "changelog": "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor/blob/latest/CHANGELOG.md",
   "manifest": "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor/releases/latest/download/module.json",
   "download": "https://github.com/paulcheeba/OverEngineeredVTT-Suite-Monitor/releases/latest/download/oev-suite-monitor.zip"
 }
