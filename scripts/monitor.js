@@ -57,13 +57,13 @@ const JITTER_SECONDS_MAX = 10;
 let _runInProgress = false;
 
 Hooks.once("init", async () => {
-  // Try to load dev config and register dev-only settings
-  try {
-    const devConfig = await import("../config/dev-config.js");
-    devConfig.registerDevSettings?.();
-  } catch (e) {
-    // Dev config not found - production mode
-  }
+  /* // Dev-only: Uncomment to load dev config and register dev-only settings
+   try {
+   const devConfig = await import("../config/dev-config.js");
+   devConfig.registerDevSettings?.();
+   } catch (e) {
+   // Dev config not found - production mode
+ }*/
 
   // Register "Show Monitor" button in settings (GM-only)
   game.settings.registerMenu(MODULE_ID, "showMonitor", {
