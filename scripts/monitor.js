@@ -71,10 +71,8 @@ Hooks.once("init", async () => {
     label: "Check for Updates Now",
     hint: "Manually open the update monitor dialog",
     icon: "fas fa-search",
-    type: class ShowMonitorButton extends FormApplication {
-      async _updateObject(event, formData) {}
-      
-      async render() {
+    type: class ShowMonitorButton extends foundry.applications.api.ApplicationV2 {
+      async render(options) {
         const allModules = await getAllModulesWithStatus();
         await showOutOfDateDialog(allModules);
       }
@@ -130,7 +128,10 @@ Hooks.once("ready", async () => {
 
   try {
     // Testing mode: force dialog with all modules (installed and not)
-    const testingMode = game.settings.get(MODULE_ID, SETTINGS.testingMode);
+    let testingMode = false;
+    if (game.settings.settings.has(`${MODULE_ID}.${SETTINGS.testingMode}`)) {
+      testingMode = game.settings.get(MODULE_ID, SETTINGS.testingMode);
+    }
     console.log(`${MODULE_ID} | Testing Mode: ${testingMode ? "Enabled" : "Disabled"}`);
     if (testingMode) {
       const allModules = await getAllModulesWithStatus();
@@ -345,14 +346,14 @@ function parseSemver(v) {
   const [core, pre] = coreAndPre.split("-");
 
   const parts = core.split(".").map(p => p.trim());
-  if (parts.length < 1 || parts.length > 3) return null;
+  if (parts.length < 1 || parts.length > 5) return null;
   const nums = parts.map(p => (p === "" ? NaN : Number(p)));
   if (nums.some(n => !Number.isInteger(n) || n < 0)) return null;
 
-  const [major, minor = 0, patch = 0] = nums;
+  const [major, minor = 0, patch = 0, build = 0, hotfix = 0] = nums;
   const prerelease = pre ? pre.split(".").map(p => p.trim()).filter(Boolean) : [];
 
-  return { major, minor, patch, prerelease };
+  return { major, minor, patch, build, hotfix, prerelease };
 }
 
 /**
@@ -364,7 +365,7 @@ function compareSemver(a, b) {
   const pb = parseSemver(b);
   if (!pa || !pb) return null;
 
-  for (const key of ["major", "minor", "patch"]) {
+  for (const key of ["major", "minor", "patch", "build", "hotfix"]) {
     if (pa[key] < pb[key]) return -1;
     if (pa[key] > pb[key]) return 1;
   }
