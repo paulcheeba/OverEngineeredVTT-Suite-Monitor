@@ -15,7 +15,18 @@ and this project adheres to Semantic Versioning adapted for Foundry VTT modules:
 - Commented out dev-config import to prevent 404 errors in production
 
 ### Changed
+- **Dialog now shows on every world load if modules are out-of-date** (unless hidden or snoozed)
+- GitHub API fetch interval cached - only fetches fresh data every 12 hours
+- Module status results cached between loads for immediate dialog display
+- "Remind Me Later" button simplified - now just closes dialog, will reappear on next load
+- Removed snooze timer functionality (no longer needed with new load behavior)
+- Update check interval setting moved to dev-config only (prevents accidental GitHub API spam)
+- Hidden state now exposed as user-facing setting "Dialog hidden until next OEV update" with checkbox in Module Settings
 - testingMode setting check now gracefully handles missing setting registration
+
+### Added
+- Console logs showing dialog hidden state and time until next GitHub fetch
+- New `lastCheckResults` setting to cache module status data between world loads
 
 ## [13.0.1.0] - 2026-01-03
 
